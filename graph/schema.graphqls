@@ -2,27 +2,47 @@
 #
 # https://gqlgen.com/getting-started/
 
-type Todo {
+type Post {
   id: ID!
+  published: Boolean!
+  title: String!
   text: String!
-  done: Boolean!
-  user: User!
+  attachments: Attachments
+  tags: [Tags]
 }
 
-type User {
-  id: ID!
-  name: String!
+scalar Attachments
+
+enum Tags {
+  Coding
+  System Architecture
+  Book
 }
 
+
+#
+# Reads
+#
 type Query {
-  todos: [Todo!]!
+  posts: [Post!]!
 }
 
-input NewTodo {
+
+#
+# Writes
+#
+input NewPost {
+  published: Boolean! = false
+  title: String!
   text: String!
-  userId: String!
+  attachments: Attachments
+  tags: [Tags]
 }
 
 type Mutation {
-  createTodo(input: NewTodo!): Todo!
+  createPost(input: NewPost!): Post!
+}
+
+type Mutation {
+  attach(files: [Attachments!]): String!
 }
