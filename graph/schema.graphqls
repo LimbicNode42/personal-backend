@@ -15,7 +15,7 @@ scalar Attachments
 
 enum Tags {
   Coding
-  System Architecture
+  System_Architecture
   Book
 }
 
@@ -41,8 +41,6 @@ input NewPost {
 
 type Mutation {
   createPost(input: NewPost!): Post!
+  attach(files: [Attachments!]): Attachments!
 }
 
-type Mutation {
-  attach(files: [Attachments!]): String!
-}

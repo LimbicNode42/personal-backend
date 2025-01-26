@@ -8,16 +8,31 @@ import (
 	"backoffice/graph/model"
 	"context"
 	"fmt"
+	"crypto/rand" // For generating cryptographically secure random numbers
+	"math/big"    // For handling big integers
 )
 
-// CreateTodo is the resolver for the createTodo field.
-func (r *mutationResolver) CreateTodo(ctx context.Context, input model.NewTodo) (*model.Todo, error) {
-	panic(fmt.Errorf("not implemented: CreateTodo - createTodo"))
+// CreatePost is the resolver for the createPost field.
+func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) (*model.Post, error) {
+	randNumber, _ := rand.Int(rand.Reader, big.NewInt(100))
+	post := &model.Post{
+		ID: fmt.Sprintf("T%d", randNumber),
+		Published: false,
+		Title: input.Title,
+		Text: input.Text,
+	}
+	r.posts = append(r.posts, post)
+	return post, nil
 }
 
-// Todos is the resolver for the todos field.
-func (r *queryResolver) Todos(ctx context.Context) ([]*model.Todo, error) {
-	panic(fmt.Errorf("not implemented: Todos - todos"))
+// Attach is the resolver for the attach field.
+func (r *mutationResolver) Attach(ctx context.Context, files []string) (string, error) {
+	panic(fmt.Errorf("not implemented: Attach - attach"))
+}
+
+// Posts is the resolver for the posts field.
+func (r *queryResolver) Posts(ctx context.Context) ([]*model.Post, error) {
+	return r.posts, nil
 }
 
 // Mutation returns MutationResolver implementation.

@@ -2,25 +2,74 @@
 
 package model
 
+import (
+	"fmt"
+	"io"
+	"strconv"
+)
+
 type Mutation struct {
 }
 
-type NewTodo struct {
-	Text   string `json:"text"`
-	UserID string `json:"userId"`
+type NewPost struct {
+	Published   bool    `json:"published"`
+	Title       string  `json:"title"`
+	Text        string  `json:"text"`
+	Attachments *string `json:"attachments,omitempty"`
+	Tags        []*Tags `json:"tags,omitempty"`
+}
+
+type Post struct {
+	ID          string  `json:"id"`
+	Published   bool    `json:"published"`
+	Title       string  `json:"title"`
+	Text        string  `json:"text"`
+	Attachments *string `json:"attachments,omitempty"`
+	Tags        []*Tags `json:"tags,omitempty"`
 }
 
 type Query struct {
 }
 
-type Todo struct {
-	ID   string `json:"id"`
-	Text string `json:"text"`
-	Done bool   `json:"done"`
-	User *User  `json:"user"`
+type Tags string
+
+const (
+	TagsCoding             Tags = "Coding"
+	TagsSystemArchitecture Tags = "System_Architecture"
+	TagsBook               Tags = "Book"
+)
+
+var AllTags = []Tags{
+	TagsCoding,
+	TagsSystemArchitecture,
+	TagsBook,
 }
 
-type User struct {
-	ID   string `json:"id"`
-	Name string `json:"name"`
+func (e Tags) IsValid() bool {
+	switch e {
+	case TagsCoding, TagsSystemArchitecture, TagsBook:
+		return true
+	}
+	return false
+}
+
+func (e Tags) String() string {
+	return string(e)
+}
+
+func (e *Tags) UnmarshalGQL(v any) error {
+	str, ok := v.(string)
+	if !ok {
+		return fmt.Errorf("enums must be strings")
+	}
+
+	*e = Tags(str)
+	if !e.IsValid() {
+		return fmt.Errorf("%s is not a valid Tags", str)
+	}
+	return nil
+}
+
+func (e Tags) MarshalGQL(w io.Writer) {
+	fmt.Fprint(w, strconv.Quote(e.String()))
 }
