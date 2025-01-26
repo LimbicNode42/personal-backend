@@ -1,7 +1,6 @@
 package main
 
 import (
-	"backoffice/graph"
 	"log"
 	"net/http"
 	"os"
@@ -12,6 +11,8 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/vektah/gqlparser/v2/ast"
+
+	"backoffice/graph"
 )
 
 const defaultPort = "8080"
@@ -22,7 +23,9 @@ func main() {
 		port = defaultPort
 	}
 
-	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: &graph.Resolver{}}))
+	resolver := graph.NewResolver()
+
+	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
 
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
