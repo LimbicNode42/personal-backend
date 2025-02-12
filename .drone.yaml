@@ -6,6 +6,15 @@ platform:
   arch: arm64
 
 steps:
+  - name: debug
+    image: alpine
+    commands:
+      - apk add --no-cache docker-cli
+      - docker images
+      - docker login repo.wheeler-network.com -u "$REPO_USER" -p "$REPO_PASS"
+      - docker build --no-cache -t repo.wheeler-network.com/personal/backend .
+      - docker push repo.wheeler-network.com/personal/backend
+
   - name: docker
     image: plugins/docker
     settings:
