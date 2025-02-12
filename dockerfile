@@ -20,7 +20,7 @@ USER 1001:1003
 WORKDIR /root/
 
 # Install CA certificates (needed for Keycloak HTTPS)
-RUN apk --no-cache add ca-certificates
+RUN sudo apk --no-cache add ca-certificates
 
 # Copy the built binary from the builder stage
 COPY --from=builder /app .
