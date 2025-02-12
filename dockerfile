@@ -14,13 +14,11 @@ RUN go build -o api .
 # Use a minimal image for deployment
 FROM alpine:latest
 
-USER 1001:1003
-
 # Set working directory
 WORKDIR /root/
 
 # Install CA certificates (needed for Keycloak HTTPS)
-RUN sudo apk --no-cache add ca-certificates
+RUN apk --no-cache add ca-certificates
 
 # Copy the built binary from the builder stage
 COPY --from=builder /app .
