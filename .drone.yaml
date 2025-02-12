@@ -11,7 +11,10 @@ steps:
     settings:
       repo: repo.wheeler-network.com/personal/backend
       registry: repo.wheeler-network.com
+      username:
+        from_secret: REPO_USER
+      password:
+        from_secret: REPO_PASS
       dockerfile: dockerfile
       tags:
         - latest
-      dry_run: true
