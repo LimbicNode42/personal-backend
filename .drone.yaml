@@ -16,5 +16,5 @@ steps:
       password:
         from_secret: REPO_PASS
       dockerfile: dockerfile
-      tags:
-        - latest
+      use_cache: false
+      auto_tag: true
