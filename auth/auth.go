@@ -38,20 +38,28 @@ func AuthMiddleware(next http.Handler) http.Handler {
 		}
 		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
-		// Validate JWT token
-		if !ValidateJWT(tokenString) {
+		// Validate Secret
+		if !ValidateSecret(tokenString) {
 			log.Println("❌ Unauthorized: Invalid token")
 			http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
 			return
 		}
+
+		// // Validate Token
+		// token, err := ValidateJWT(tokenString)
+		// if err != nil || !token.Valid {
+		// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		// 	c.Abort()
+		// 	return
+		// }
 
 		// Token is valid, pass request to next handler
 		next.ServeHTTP(w, r)
 	})
 }
 
-// Validate JWT token
-func ValidateJWT(token string) bool {
+// Validate Secret
+func ValidateSecret(token string) bool {
 	client := resty.New().
 		SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true}) // TODO: MUST be removed before deployed to production
 	resp, err := client.R().
@@ -75,3 +83,37 @@ func ValidateJWT(token string) bool {
 	// Check if the token is active
 	return result["active"].(bool)
 }
+
+// // ValidateJWT checks the JWT token against Keycloak public keys
+// func ValidateJWT(tokenString string) (*jwt.Token, error) {
+// 	// Get Keycloak public key dynamically
+// 	cert, err := GetKeycloakPublicKey()
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+// 		return jwt.ParseRSAPublicKeyFromPEM(cert)
+// 	})
+// }
+
+// // Fetch Keycloak Public Key
+// func GetKeycloakPublicKey() ([]byte, error) {
+// 	client := resty.New()
+// 	resp, err := client.R().Get(fmt.Sprintf("%s/realms/%s/protocol/openid-connect/certs", KeycloakURL, Realm))
+// 	if err != nil {
+// 		return nil, err
+// 	}
+
+// 	var keyData map[string]interface{}
+// 	if err := json.Unmarshal(resp.Body(), &keyData); err != nil {
+// 		return nil, err
+// 	}
+
+// 	keys := keyData["keys"].([]interface{})
+// 	kid := keys[0].(map[string]interface{})["x5c"].([]interface{})[0].(string)
+
+// 	// Convert to PEM format
+// 	cert := "-----BEGIN CERTIFICATE-----\n" + kid + "\n-----END CERTIFICATE-----"
+// 	return []byte(cert), nil
+// }
