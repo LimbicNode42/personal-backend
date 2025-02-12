@@ -1,0 +1,13 @@
+kind: pipeline
+name: build
+
+steps:
+  - name: docker
+    image: plugins/docker
+    settings:
+      repo: repo.wheeler-network.com/personal/backend
+      registry: repo.wheeler-network.com
+      dockerfile: dockerfile
+      tags:
+        - latest
+      dry_run: true
