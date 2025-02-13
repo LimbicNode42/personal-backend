@@ -9,8 +9,11 @@ steps:
   - name: infisical
     image: alpine
     commands:
-      - apk add --no-cache curl
-      - curl -fsSL https://infisical.com/cli/install.sh | sh
+      - apk add --no-cache wget
+      - wget https://github.com/Infisical/infisical/releases/download/infisical-cli/v0.34.2/infisical_0.34.2_linux_arm64.tar.gz
+      - tar -xvf infisical_0.34.2_linux_arm64.tar.gz
+      - chmod +x infisical
+      - sudo mv infisical /usr/local/bin/infisical
       - infisical login --domain INF_URL --client-id INF_CLIENT_ID --client-secret INF_CLIENT_SECRET
       - infisical pull --env production --format dotenv > .env
 
