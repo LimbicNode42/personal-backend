@@ -14,7 +14,7 @@ steps:
       - tar -xvf infisical_0.34.2_linux_arm64.tar.gz
       - chmod +x infisical
       - mv infisical /usr/local/bin/infisical
-      - infisical login --domain INF_URL --client-id INF_CLIENT_ID --client-secret INF_CLIENT_SECRET
+      - infisical login --domain $INF_URL --client-id $INF_CLIENT_ID --client-secret $INF_CLIENT_SECRET
       - infisical pull --env production --format dotenv > .env
 
   - name: docker
