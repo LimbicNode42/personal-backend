@@ -24,7 +24,6 @@ steps:
       - chmod +x infisical
       - mv infisical /usr/local/bin/infisical
       - export INFISICAL_TOKEN=$(infisical login --domain=$INF_HOST --method=universal-auth --client-id=$INF_CLIENT_ID --client-secret=$INF_CLIENT_SECRET --plain --silent)
-      - echo $INFISICAL_TOKEN
       - curl -H "Authorization: Bearer $INFISICAL_TOKEN" "http://192.168.0.108:8080/api/v3/secrets/raw?environment=prod&workspaceId=$INF_PROJECT&secretPath=/keycloak" > .env
       # - infisical export --token=$INFISICAL_TOKEN --projectId=$INF_PROJECT --env=prod --format=dotenv > .env
       - cat .env
