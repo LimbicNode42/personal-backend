@@ -27,7 +27,7 @@ steps:
       - wget --header="Authorization:Bearer $INFISICAL_TOKEN" -O .env "http://192.168.0.108:8080/api/v3/secrets/raw?environment=prod&workspaceId=$INF_PROJECT&secretPath=/keycloak"
       - cat .env
 
-  - name: infisical
+  - name: test
     image: alpine
     commands:
       - echo $INFISICAL_TOKEN
