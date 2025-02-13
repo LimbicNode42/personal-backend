@@ -25,7 +25,7 @@ steps:
       - mv infisical /usr/local/bin/infisical
       - export INFISICAL_TOKEN=$(infisical login --domain=$INF_HOST --method=universal-auth --client-id=$INF_CLIENT_ID --client-secret=$INF_CLIENT_SECRET --plain --silent)
       - echo $INFISICAL_TOKEN
-      - infisical export --token $INFISICAL_TOKEN --projectId $INF_PROJECT --env prod --format dotenv > .env
+      - infisical export --token=$INFISICAL_TOKEN --projectId=dev --env=prod --format=dotenv > .env
       - cat .env
 
   - name: docker
