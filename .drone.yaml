@@ -7,8 +7,10 @@ platform:
 
 steps:
   - name: infisical
-    image: infisical/cli:latest-arm64
+    image: alpine
     commands:
+      - apk add --no-cache curl
+      - curl -fsSL https://infisical.com/cli/install.sh | sh
       - infisical login --domain INF_URL --client-id INF_CLIENT_ID --client-secret INF_CLIENT_SECRET
       - infisical pull --env production --format dotenv > .env
 
