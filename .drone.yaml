@@ -8,13 +8,17 @@ platform:
 steps:
   - name: infisical
     image: alpine
+    environment:
+      INF_CLIENT_ID:
+        from_secret: INF_CLIENT_ID
+      INF_CLIENT_SECRET:
+        from_secret: INF_CLIENT_SECRET
     commands:
       - apk add --no-cache wget
       - wget https://github.com/Infisical/infisical/releases/download/infisical-cli/v0.34.2/infisical_0.34.2_linux_arm64.tar.gz
       - tar -xvf infisical_0.34.2_linux_arm64.tar.gz
       - chmod +x infisical
       - mv infisical /usr/local/bin/infisical
-      - echo $INF_CLIENT_ID
       - infisical login --domain=http://192.168.0.108:8080 --method=universal-auth --client-id=$INF_CLIENT_ID --client-secret=$INF_CLIENT_SECRET
       - infisical pull --env production --format dotenv > .env
 
