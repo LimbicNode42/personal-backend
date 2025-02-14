@@ -8,24 +8,45 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"crypto/rand" // For generating cryptographically secure random numbers
-	"math/big"    // For handling big integers
+	"time"
 	
-	// "go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson"
 
 	"backoffice/graph/model"
+	"backoffice/db"
 )
 
 // CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) (*model.Post, error) {
-	randNumber, _ := rand.Int(rand.Reader, big.NewInt(100))
+	counters := r.Resolver.MongoClient.Client.Database("db").Collection("counters")
+
+	newIndex, err := db.GetNextCollectionIndex(counters, "blogPostID")
+	if err != nil {
+		log.Fatalf("Error getting next sequence: %v", err)
+	}
+
 	post := &model.Post{
-		ID: fmt.Sprintf("T%d", randNumber),
+		ID: fmt.Sprintf("%d", newIndex),
 		Published: false,
 		Title: input.Title,
 		Text: input.Text,
 	}
-	r.posts = append(r.posts, post)
+
+	bsonPost, err := bson.Marshal(post)
+	if err != nil {
+		log.Fatalf("Error marshalling to BSON: %v", err)
+	}
+		
+	collection := r.Resolver.MongoClient.Client.Database("db").Collection("blog")
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+
+	_, err = collection.InsertOne(ctx, bson.Raw(bsonPost))
+	if err != nil {
+		log.Fatalf("DB Insert Failed: %v", err)
+	}
+
 	return post, nil
 }
 
@@ -37,11 +58,33 @@ func (r *mutationResolver) Attach(ctx context.Context, files []string) (string, 
 // Posts is the resolver for the posts field.
 func (r *queryResolver) Posts(ctx context.Context) ([]*model.Post, error) {
 	// Use MongoDB client from the Resolver struct
-	collection := r.Resolver.MongoClient.GetCollection("mydatabase", "users")
+	collection := r.Resolver.MongoClient.Client.Database("db").Collection("blog")
 
-	log.Println(collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
 
-	return r.posts, nil
+	cur, err := collection.Find(ctx, bson.D{})
+	if err != nil {
+		log.Fatalf("DB Lookup Failed: %v", err)
+	}
+
+	var posts []*model.Post
+
+	defer cur.Close(ctx)
+	for cur.Next(ctx) {
+		var post model.Post
+		if err := cur.Decode(&post); err != nil {
+		  log.Fatal(err)
+		}
+	
+		posts = append(posts, &post)
+	}
+	
+	if err := cur.Err(); err != nil {
+		log.Fatal(err)
+	}
+
+	return posts, nil
 }
 
 // Mutation returns MutationResolver implementation.

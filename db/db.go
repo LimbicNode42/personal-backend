@@ -3,13 +3,14 @@ package db
 import (
     "context"
     "log"
-	"os"
+	// "os"
     "time"
 
+	"go.mongodb.org/mongo-driver/bson"
     "go.mongodb.org/mongo-driver/mongo"
     "go.mongodb.org/mongo-driver/mongo/options"
 
-	"backoffice/auth"
+	// "backoffice/auth"
 )
 
 // MongoClient holds the MongoDB connection
@@ -44,6 +45,7 @@ func (m *MongoClient) GetCollection(database, collection string) *mongo.Collecti
 
 func CreateMongoUri() string {
 	//TODO: add auth to mongodb
+	// see https://pkg.go.dev/go.mongodb.org/mongo-driver/v2/mongo#Connect
 	// client := auth.InfisicalLogin()
 	// log.Println("Project ID: %v", os.Getenv("INF_DEV_PROJECT_ID"))
 	// secrets := auth.InfisicalGetSecrets(client,os.Getenv("INF_DEV_PROJECT_ID"),"prod","/mongo")
@@ -51,4 +53,22 @@ func CreateMongoUri() string {
 	uri := "mongodb://192.168.0.111:27017"
 
 	return uri
+}
+
+// Function to get next incrementing ID
+func GetNextCollectionIndex(collection *mongo.Collection, counterName string) (int, error) {
+	filter := bson.M{"_id": counterName}
+	update := bson.M{"$inc": bson.M{"index": 1}}
+
+	// Find and update the counter atomically
+	var result struct {
+		Index int `bson:"index"`
+	}
+	opts := options.FindOneAndUpdate().SetReturnDocument(options.After).SetUpsert(true)
+	err := collection.FindOneAndUpdate(context.Background(), filter, update, opts).Decode(&result)
+
+	if err != nil {
+		return 0, err
+	}
+	return result.Index, nil
 }
