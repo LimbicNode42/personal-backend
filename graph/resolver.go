@@ -18,7 +18,7 @@ type Resolver struct{
 }
 
 func NewResolver() *Resolver {
-	mongoURI := "mongodb://192.168.0.111:27017" // Your MongoDB URI
+	mongoURI := "mongodb://192.168.0.111:27017"
 	mongoClient := db.NewMongoClient(mongoURI)
 
 	log.Println("Connected to MongoDB")

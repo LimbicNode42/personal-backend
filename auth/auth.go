@@ -5,21 +5,20 @@ import (
 	"fmt"
 	"os"
 	"log"
+	"context"
 	"net/http"
 	"strings"
 	"crypto/tls"
 
 	"github.com/go-resty/resty/v2"
+	infisical "github.com/infisical/go-sdk"
 )
 
-const (
-	KeycloakURL  = "https://192.168.0.109:8443"
-	Realm        = "shadow"
-	ClientID     = "api-dev-site"
-)
-
-// Will need to be changed to retrieve from Infiscal
-var ClientSecret = os.Getenv("KEYCLOAK_DEV_SITE_API")
+var KeycloakURL = "https://192.168.0.109:8443"
+var Realm = "shadow"
+var ClientID = os.Getenv("DEV_API_CLIENT_ID")
+var ClientSecret = os.Getenv("DEV_API_CLIENT_SECRET")
+var ProjectID = os.Getenv("INF_DEV_PROJECT_ID")
 
 // Middleware to validate JWT tokens
 func AuthMiddleware(next http.Handler) http.Handler {
@@ -117,3 +116,36 @@ func ValidateSecret(token string) bool {
 // 	cert := "-----BEGIN CERTIFICATE-----\n" + kid + "\n-----END CERTIFICATE-----"
 // 	return []byte(cert), nil
 // }
+
+func InfisicalLogin() infisical.InfisicalClientInterface {
+	client := infisical.NewInfisicalClient(context.Background(), infisical.Config{
+		SiteUrl: KeycloakURL,
+    	AutoTokenRefresh: true,
+	})
+
+	_, err := client.Auth().UniversalAuthLogin(ClientID, ClientSecret)
+
+	if err != nil {
+		fmt.Printf("Authentication failed: %v", err)
+		os.Exit(1)
+	}
+
+	return client
+}
+
+func InfisicalGetSecrets(client infisical.InfisicalClientInterface, projectId string, env string, path string) []infisical.Secret {
+	secrets, err := client.Secrets().List(infisical.ListSecretsOptions{
+		// SecretKey:   "API_KEY",
+		ProjectID:   projectId,
+		ProjectSlug: "dev",
+		Environment: env,
+		SecretPath:  path,
+	})
+
+	if err != nil {
+		fmt.Printf("Error: %v", err)
+		os.Exit(1)
+	}
+
+	return secrets
+}
