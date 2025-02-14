@@ -15,10 +15,14 @@ import (
 )
 
 var KeycloakURL = "https://192.168.0.109:8443"
-var Realm = "shadow"
-var ClientID = os.Getenv("DEV_API_CLIENT_ID")
-var ClientSecret = os.Getenv("DEV_API_CLIENT_SECRET")
-var ProjectID = os.Getenv("INF_DEV_PROJECT_ID")
+var KeycloakRealm = "shadow"
+var KeycloakClientID = os.Getenv("KC_DEV_CLIENT_ID")
+var KeycloakClientSecret = os.Getenv("KC_DEV_CLIENT_SECRET")
+
+var InfURL = "http://192.168.0.108:8080"
+var InfProjectID = os.Getenv("INF_DEV_PROJECT_ID")
+var InfClientID = os.Getenv("INF_DEV_API_CLIENT_ID")
+var InfClientSecret = os.Getenv("INF_DEV_API_CLIENT_SECRET")
 
 // Middleware to validate JWT tokens
 func AuthMiddleware(next http.Handler) http.Handler {
@@ -62,11 +66,11 @@ func ValidateSecret(token string) bool {
 	client := resty.New().
 		SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true}) // TODO: MUST be removed before deployed to production
 	resp, err := client.R().
-		SetBasicAuth(ClientID, ClientSecret).
+		SetBasicAuth(KeycloakClientID, KeycloakClientSecret).
 		SetFormData(map[string]string{
 			"token": token,
 		}).
-		Post(fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token/introspect", KeycloakURL, Realm))
+		Post(fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token/introspect", KeycloakURL, KeycloakRealm))
 
 	if err != nil {
 		log.Println("❌ Error calling Keycloak introspection endpoint:", err)
@@ -119,11 +123,11 @@ func ValidateSecret(token string) bool {
 
 func InfisicalLogin() infisical.InfisicalClientInterface {
 	client := infisical.NewInfisicalClient(context.Background(), infisical.Config{
-		SiteUrl: KeycloakURL,
+		SiteUrl: InfURL,
     	AutoTokenRefresh: true,
 	})
 
-	_, err := client.Auth().UniversalAuthLogin(ClientID, ClientSecret)
+	_, err := client.Auth().UniversalAuthLogin(InfClientID, InfClientSecret)
 
 	if err != nil {
 		fmt.Printf("Authentication failed: %v", err)
@@ -137,7 +141,7 @@ func InfisicalGetSecrets(client infisical.InfisicalClientInterface, projectId st
 	secrets, err := client.Secrets().List(infisical.ListSecretsOptions{
 		// SecretKey:   "API_KEY",
 		ProjectID:   projectId,
-		ProjectSlug: "dev",
+		ProjectSlug: "dev-site",
 		Environment: env,
 		SecretPath:  path,
 	})

@@ -3,10 +3,13 @@ package db
 import (
     "context"
     "log"
+	"os"
     "time"
 
     "go.mongodb.org/mongo-driver/mongo"
     "go.mongodb.org/mongo-driver/mongo/options"
+
+	"backoffice/auth"
 )
 
 // MongoClient holds the MongoDB connection
@@ -29,10 +32,23 @@ func NewMongoClient(uri string) *MongoClient {
 		log.Fatalf("Failed to ping MongoDB: %v", err)
 	}
 
+	log.Println("Connected to MongoDB")
+
 	return &MongoClient{Client: client}
 }
 
 // GetCollection returns a MongoDB collection
 func (m *MongoClient) GetCollection(database, collection string) *mongo.Collection {
 	return m.Client.Database(database).Collection(collection)
+}
+
+func CreateMongoUri() string {
+	//TODO: add auth to mongodb
+	// client := auth.InfisicalLogin()
+	// log.Println("Project ID: %v", os.Getenv("INF_DEV_PROJECT_ID"))
+	// secrets := auth.InfisicalGetSecrets(client,os.Getenv("INF_DEV_PROJECT_ID"),"prod","/mongo")
+
+	uri := "mongodb://192.168.0.111:27017"
+
+	return uri
 }

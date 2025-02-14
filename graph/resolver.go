@@ -1,8 +1,6 @@
 package graph
 
 import (
-	"log"
-
 	"backoffice/graph/model"
 	"backoffice/db"
 )
@@ -18,10 +16,8 @@ type Resolver struct{
 }
 
 func NewResolver() *Resolver {
-	mongoURI := "mongodb://192.168.0.111:27017"
+	mongoURI := db.CreateMongoUri()
 	mongoClient := db.NewMongoClient(mongoURI)
-
-	log.Println("Connected to MongoDB")
 
 	var posts []*model.Post
 
