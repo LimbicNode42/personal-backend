@@ -1,32 +1,59 @@
 package auth
 
 import (
-	"encoding/json"
+	"crypto/tls"
 	"fmt"
-	"os"
 	"log"
+	"time"
 	"context"
 	"net/http"
 	"strings"
-	"crypto/tls"
 
-	"github.com/go-resty/resty/v2"
-	infisical "github.com/infisical/go-sdk"
+	"github.com/golang-jwt/jwt/v5"
+	"github.com/MicahParks/keyfunc/v3"
+	"github.com/MicahParks/jwkset"
 )
 
 var KeycloakURL = "https://192.168.0.109:8443"
 var KeycloakRealm = "shadow"
-var KeycloakClientID = os.Getenv("KC_DEV_CLIENT_ID")
-var KeycloakClientSecret = os.Getenv("KC_DEV_CLIENT_SECRET")
 
-var InfURL = "http://192.168.0.108:8080"
-var InfProjectID = os.Getenv("INF_DEV_PROJECT_ID")
-var InfClientID = os.Getenv("INF_DEV_API_CLIENT_ID")
-var InfClientSecret = os.Getenv("INF_DEV_API_CLIENT_SECRET")
+var keycloakJWKS keyfunc.Keyfunc
+
+// Initialize JWKS from Keycloak
+func InitJWKS() (error) {
+	jwksURL := fmt.Sprintf("%s/realms/%s/protocol/openid-connect/certs", KeycloakURL, KeycloakRealm)
+	log.Println("Fetching JWKS from:", jwksURL)
+
+	// Create an HTTP client that ignores TLS verification
+	transport := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true}, // ⚠️ Not safe for production
+	}
+	client := &http.Client{Transport: transport, Timeout: 10 * time.Second}
+
+	storage, err := jwkset.NewStorageFromHTTP(jwksURL, jwkset.HTTPClientStorageOptions{
+		Client:          client,
+		RefreshInterval: time.Hour,
+	})
+	if err != nil {
+		log.Fatalf("Failed to create JWKS storage: %v", err)
+		return err
+	}
+
+	ctx := context.Background()
+	keycloakJWKS, err = keyfunc.New(keyfunc.Options{
+		Ctx:     ctx,
+		Storage: storage,
+	})
+
+	log.Println("JWKS successfully loaded from Keycloak")
+	return nil
+}
 
 // Middleware to validate JWT tokens
 func AuthMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		log.Println("Auth Middleware: Checking request", r.Method, r.URL.Path)
+
 		// Skip auth for the playground
 		if r.URL.Path == "/playground" {
 			next.ServeHTTP(w, r)
@@ -39,117 +66,60 @@ func AuthMiddleware(next http.Handler) http.Handler {
 			http.Error(w, "Unauthorized: Missing token", http.StatusUnauthorized)
 			return
 		}
-		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 
-		// Validate Secret
-		if !ValidateSecret(tokenString) {
-			log.Println("❌ Unauthorized: Invalid token")
+		if !strings.HasPrefix(authHeader, "Bearer ") {
+			log.Println("Unauthorized: Invalid Authorization format", authHeader)
+			http.Error(w, "Unauthorized: Invalid token format", http.StatusUnauthorized)
+			return
+		}
+
+		tokenString := strings.TrimPrefix(authHeader, "Bearer ")
+		if tokenString == authHeader {
+			http.Error(w, "Invalid Authorization format", http.StatusUnauthorized)
+			return
+		}
+
+		log.Println("Auth Middleware: Token found, verifying...")
+
+		// Parse and verify the JWT token
+		token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+			if keycloakJWKS == nil {
+				return nil, fmt.Errorf("JWKS not initialized")
+			}
+			return keycloakJWKS.Keyfunc(token)
+		}, jwt.WithLeeway(2*time.Minute))
+
+		// Validations
+		if claims, ok := token.Claims.(jwt.MapClaims); ok {
+			// Print `iat` (issued at) claim
+			if iat, ok := claims["iat"].(float64); ok {
+				issuedAt := time.Unix(int64(iat), 0)
+				serverTime := time.Now()
+
+				log.Println("Token Issued At (iat):", issuedAt.UTC())
+				log.Println("Server Current Time:", serverTime.UTC())
+				log.Println("Time Difference:", serverTime.Sub(issuedAt))
+			} else {
+				log.Println("Error: Token missing `iat` claim")
+			}
+		} else {
+			log.Println("Error: Unable to parse token claims")
+		}
+		if err != nil {
+			log.Println("Unauthorized: Token validation error:", err)
+			http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
+			return
+		}
+	
+		if !token.Valid {
+			log.Println("Unauthorized: Token is invalid")
 			http.Error(w, "Unauthorized: Invalid token", http.StatusUnauthorized)
 			return
 		}
 
-		// // Validate Token
-		// token, err := ValidateJWT(tokenString)
-		// if err != nil || !token.Valid {
-		// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		// 	c.Abort()
-		// 	return
-		// }
+		log.Println("Auth Middleware enabled: Token verified successfully")
 
 		// Token is valid, pass request to next handler
 		next.ServeHTTP(w, r)
 	})
-}
-
-// Validate Secret
-func ValidateSecret(token string) bool {
-	client := resty.New().
-		SetTLSClientConfig(&tls.Config{InsecureSkipVerify: true}) // TODO: MUST be removed before deployed to production
-	resp, err := client.R().
-		SetBasicAuth(KeycloakClientID, KeycloakClientSecret).
-		SetFormData(map[string]string{
-			"token": token,
-		}).
-		Post(fmt.Sprintf("%s/realms/%s/protocol/openid-connect/token/introspect", KeycloakURL, KeycloakRealm))
-
-	if err != nil {
-		log.Println("❌ Error calling Keycloak introspection endpoint:", err)
-		return false
-	}
-
-	var result map[string]interface{}
-	if err := json.Unmarshal(resp.Body(), &result); err != nil {
-		log.Println("❌ Error parsing Keycloak response:", err)
-		return false
-	}
-
-	// Check if the token is active
-	return result["active"].(bool)
-}
-
-// // ValidateJWT checks the JWT token against Keycloak public keys
-// func ValidateJWT(tokenString string) (*jwt.Token, error) {
-// 	// Get Keycloak public key dynamically
-// 	cert, err := GetKeycloakPublicKey()
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	return jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-// 		return jwt.ParseRSAPublicKeyFromPEM(cert)
-// 	})
-// }
-
-// // Fetch Keycloak Public Key
-// func GetKeycloakPublicKey() ([]byte, error) {
-// 	client := resty.New()
-// 	resp, err := client.R().Get(fmt.Sprintf("%s/realms/%s/protocol/openid-connect/certs", KeycloakURL, Realm))
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	var keyData map[string]interface{}
-// 	if err := json.Unmarshal(resp.Body(), &keyData); err != nil {
-// 		return nil, err
-// 	}
-
-// 	keys := keyData["keys"].([]interface{})
-// 	kid := keys[0].(map[string]interface{})["x5c"].([]interface{})[0].(string)
-
-// 	// Convert to PEM format
-// 	cert := "-----BEGIN CERTIFICATE-----\n" + kid + "\n-----END CERTIFICATE-----"
-// 	return []byte(cert), nil
-// }
-
-func InfisicalLogin() infisical.InfisicalClientInterface {
-	client := infisical.NewInfisicalClient(context.Background(), infisical.Config{
-		SiteUrl: InfURL,
-    	AutoTokenRefresh: true,
-	})
-
-	_, err := client.Auth().UniversalAuthLogin(InfClientID, InfClientSecret)
-
-	if err != nil {
-		fmt.Printf("Authentication failed: %v", err)
-		os.Exit(1)
-	}
-
-	return client
-}
-
-func InfisicalGetSecrets(client infisical.InfisicalClientInterface, projectId string, env string, path string) []infisical.Secret {
-	secrets, err := client.Secrets().List(infisical.ListSecretsOptions{
-		// SecretKey:   "API_KEY",
-		ProjectID:   projectId,
-		ProjectSlug: "dev-site",
-		Environment: env,
-		SecretPath:  path,
-	})
-
-	if err != nil {
-		fmt.Printf("Error: %v", err)
-		os.Exit(1)
-	}
-
-	return secrets
 }

@@ -11,7 +11,10 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
 	"github.com/vektah/gqlparser/v2/ast"
+
 	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/rs/cors"
 
 	"backoffice/graph"
 	"backoffice/auth"
@@ -19,10 +22,18 @@ import (
 
 const defaultPort = "8080"
 
+var KeycloakURL = "https://192.168.0.109:8443"
+var KeycloakRealm = "shadow"
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
+	}
+
+	// Initialize JWKS for Keycloak authentication
+	if err := auth.InitJWKS(); err != nil {
+		log.Fatalf("Failed to initialize JWKS: %v", err)
 	}
 
 	resolver := graph.NewResolver()
@@ -41,7 +52,29 @@ func main() {
 
 	// Set up routerication middleware
 	router := chi.NewRouter()
+
+	log.Println("Applying Logging Middleware")
+	router.Use(middleware.Logger)
+	
+	// Enable CORS
+	log.Println("Initializing CORS middleware")
+	corsHandler := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:3001", "https://backoffice.wheeler-network.com"}, // Allow React app
+		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
+		AllowedHeaders:   []string{"Authorization", "Content-Type"},
+		AllowCredentials: true,
+	})
+	router.Use(corsHandler.Handler)
+
+	log.Println("Applying Auth Middleware")
 	router.Use(auth.AuthMiddleware) // Apply auth to all routes except `/playground`
+
+	router.Options("/*", func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Access-Control-Allow-Origin", r.Header.Get("Origin"))
+		w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+		w.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
+		w.WriteHeader(http.StatusOK)
+	})
 
 	router.Handle("/playground", playground.Handler("GraphQL playground", "/query"))
 	router.Handle("/query", srv)

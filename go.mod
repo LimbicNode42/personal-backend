@@ -4,10 +4,13 @@ go 1.23.5
 
 require (
 	github.com/99designs/gqlgen v0.17.64
+	github.com/MicahParks/jwkset v0.8.0
+	github.com/MicahParks/keyfunc/v3 v3.3.10
 	github.com/go-chi/chi/v5 v5.2.0
 	github.com/go-resty/resty/v2 v2.16.5
-	github.com/golang-jwt/jwt/v4 v4.5.1
+	github.com/golang-jwt/jwt/v5 v5.2.1
 	github.com/infisical/go-sdk v0.4.7
+	github.com/rs/cors v1.11.1
 	github.com/vektah/gqlparser/v2 v2.5.22
 	go.mongodb.org/mongo-driver v1.17.2
 )
@@ -68,7 +71,7 @@ require (
 	golang.org/x/sync v0.10.0 // indirect
 	golang.org/x/sys v0.29.0 // indirect
 	golang.org/x/text v0.21.0 // indirect
-	golang.org/x/time v0.6.0 // indirect
+	golang.org/x/time v0.9.0 // indirect
 	golang.org/x/tools v0.24.0 // indirect
 	google.golang.org/api v0.188.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20240701130421-f6361c86f094 // indirect
