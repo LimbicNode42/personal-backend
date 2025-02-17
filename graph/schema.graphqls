@@ -31,6 +31,12 @@ type Query {
 #
 # Writes
 #
+type Mutation {
+  createPost(input: NewPost!): Post!
+  attach(files: [Attachments!]): Attachments!
+  editPost(input: EditPost!): Post!
+}
+
 input NewPost {
   published: Boolean! = false
   title: String!
@@ -39,8 +45,12 @@ input NewPost {
   tags: [Tags]
 }
 
-type Mutation {
-  createPost(input: NewPost!): Post!
-  attach(files: [Attachments!]): Attachments!
+input EditPost {
+  id: ID!
+  published: Boolean!
+  title: String!
+  text: String!
+  attachments: Attachments
+  tags: [Tags]
 }
 
