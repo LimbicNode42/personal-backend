@@ -30,6 +30,8 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) 
 		Published: false,
 		Title:     input.Title,
 		Text:      input.Text,
+		Tags:		input.Tags,
+		Attachments: input.Attachments,
 	}
 
 	bsonPost, err := bson.Marshal(post)
@@ -73,6 +75,12 @@ func (r *mutationResolver) EditPost(ctx context.Context, input model.EditPost) (
 	if input.Published != false {
 		update["$set"].(bson.M)["published"] = input.Published
 	}
+	if len(input.Tags) > 0 {
+		update["$set"].(bson.M)["tags"] = input.Tags
+	}
+	if input.Attachments != nil && *input.Attachments != "" {
+		update["$set"].(bson.M)["attachments"] = input.Attachments
+	}
 
 	// Execute update operation
 	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
@@ -83,6 +91,22 @@ func (r *mutationResolver) EditPost(ctx context.Context, input model.EditPost) (
 	}
 
 	return &updatedPost, nil
+}
+
+// DeletePost is the resolver for the deletePost field.
+func (r *mutationResolver) DeletePost(ctx context.Context, input model.DeletePost) (*model.Post, error) {
+	log.Println("Deleting blog post")
+	collection := r.Resolver.MongoClient.Client.Database("db").Collection("blog")
+
+	filter := bson.M{"id": input.ID}
+
+	var deletedPost *model.Post
+	err := collection.FindOneAndDelete(ctx, filter).Decode(&deletedPost)
+	if err != nil {
+		return nil, err
+	}
+
+	return deletedPost, nil
 }
 
 // Posts is the resolver for the posts field.

@@ -8,6 +8,15 @@ import (
 	"strconv"
 )
 
+type DeletePost struct {
+	ID          string  `json:"id"`
+	Published   *bool   `json:"published,omitempty"`
+	Title       *string `json:"title,omitempty"`
+	Text        *string `json:"text,omitempty"`
+	Attachments *string `json:"attachments,omitempty"`
+	Tags        []*Tags `json:"tags,omitempty"`
+}
+
 type EditPost struct {
 	ID          string  `json:"id"`
 	Published   bool    `json:"published"`

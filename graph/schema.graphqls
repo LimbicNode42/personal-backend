@@ -35,6 +35,7 @@ type Mutation {
   createPost(input: NewPost!): Post!
   attach(files: [Attachments!]): Attachments!
   editPost(input: EditPost!): Post!
+  deletePost(input: DeletePost!): Post!
 }
 
 input NewPost {
@@ -50,6 +51,15 @@ input EditPost {
   published: Boolean!
   title: String!
   text: String!
+  attachments: Attachments
+  tags: [Tags]
+}
+
+input DeletePost {
+  id: ID!
+  published: Boolean
+  title: String
+  text: String
   attachments: Attachments
   tags: [Tags]
 }
