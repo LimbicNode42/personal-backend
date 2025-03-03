@@ -18,6 +18,18 @@ type MongoClient struct {
 	Client *mongo.Client
 }
 
+func CreateMongoUri() string {
+	//TODO: add auth to mongodb
+	// see https://pkg.go.dev/go.mongodb.org/mongo-driver/v2/mongo#Connect
+	// client := auth.InfisicalLogin()
+	// log.Println("Project ID: %v", os.Getenv("INF_DEV_PROJECT_ID"))
+	// secrets := auth.InfisicalGetSecrets(client,os.Getenv("INF_DEV_PROJECT_ID"),"prod","/mongo")
+
+	uri := "mongodb://192.168.0.111:27017"
+
+	return uri
+}
+
 // NewMongoClient creates and returns a new MongoDB client
 func NewMongoClient(uri string) *MongoClient {
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
@@ -43,18 +55,6 @@ func (m *MongoClient) GetCollection(database, collection string) *mongo.Collecti
 	return m.Client.Database(database).Collection(collection)
 }
 
-func CreateMongoUri() string {
-	//TODO: add auth to mongodb
-	// see https://pkg.go.dev/go.mongodb.org/mongo-driver/v2/mongo#Connect
-	// client := auth.InfisicalLogin()
-	// log.Println("Project ID: %v", os.Getenv("INF_DEV_PROJECT_ID"))
-	// secrets := auth.InfisicalGetSecrets(client,os.Getenv("INF_DEV_PROJECT_ID"),"prod","/mongo")
-
-	uri := "mongodb://192.168.0.111:27017"
-
-	return uri
-}
-
 // Function to get next incrementing ID
 func GetNextCollectionIndex(collection *mongo.Collection, counterName string) (int, error) {
 	filter := bson.M{"_id": counterName}
@@ -71,4 +71,10 @@ func GetNextCollectionIndex(collection *mongo.Collection, counterName string) (i
 		return 0, err
 	}
 	return result.Index, nil
+}
+
+func (c *MongoClient) Close() {
+	if c.Client != nil {
+		c.Client.Disconnect(context.Background())
+	}
 }

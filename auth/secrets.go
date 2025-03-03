@@ -14,7 +14,7 @@ var InfProjectID = os.Getenv("INF_DEV_PROJECT_ID")
 var InfClientID = os.Getenv("INF_DEV_API_CLIENT_ID")
 var InfClientSecret = os.Getenv("INF_DEV_API_CLIENT_SECRET")
 
-func InfisicalLogin() infisical.InfisicalClientInterface {
+func infisicalLogin() infisical.InfisicalClientInterface {
 	client := infisical.NewInfisicalClient(context.Background(), infisical.Config{
 		SiteUrl: InfURL,
     	AutoTokenRefresh: true,
@@ -30,12 +30,13 @@ func InfisicalLogin() infisical.InfisicalClientInterface {
 	return client
 }
 
-func InfisicalGetSecrets(client infisical.InfisicalClientInterface, projectId string, env string, path string) []infisical.Secret {
+func InfisicalGetSecrets(path string) []infisical.Secret {
+	client := infisicalLogin()
 	secrets, err := client.Secrets().List(infisical.ListSecretsOptions{
 		// SecretKey:   "API_KEY",
-		ProjectID:   projectId,
+		ProjectID:   InfProjectID,
 		ProjectSlug: "dev-site",
-		Environment: env,
+		Environment: "prod",
 		SecretPath:  path,
 	})
 

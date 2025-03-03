@@ -17,4 +17,6 @@ import (
 	_ "github.com/MicahParks/jwkset"
 
 	_ "github.com/infisical/go-sdk"
+
+	_ "github.com/hirochachacha/go-smb2"
 )

@@ -36,6 +36,7 @@ require (
 	github.com/aws/smithy-go v1.20.2 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.5 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
+	github.com/geoffgarside/ber v1.1.0 // indirect
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
@@ -48,6 +49,7 @@ require (
 	github.com/googleapis/gax-go/v2 v2.12.5 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
+	github.com/hirochachacha/go-smb2 v1.1.0 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect

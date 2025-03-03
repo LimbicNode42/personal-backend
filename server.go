@@ -18,6 +18,7 @@ import (
 
 	"backoffice/graph"
 	"backoffice/auth"
+	"backoffice/db"
 )
 
 const defaultPort = "8080"
@@ -36,15 +37,21 @@ func main() {
 		log.Fatalf("Failed to initialize JWKS: %v", err)
 	}
 
-	resolver := graph.NewResolver()
+	cdnSecrets := auth.InfisicalGetSecrets("/omv")
+
+	mongoURI := db.CreateMongoUri()
+	smbConfig, err := db.SMBConfigure(cdnSecrets)
+	if err != nil {
+		panic(err)
+	}
+	resolver := graph.NewResolver(mongoURI, smbConfig)
+	defer resolver.Close()
 
 	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
-
 	srv.AddTransport(transport.Options{})
 	srv.AddTransport(transport.GET{})
 	srv.AddTransport(transport.POST{})
 	srv.AddTransport(transport.MultipartForm{})
-
 	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
 	srv.Use(extension.Introspection{})
 	srv.Use(extension.AutomaticPersistedQuery{
@@ -80,7 +87,7 @@ func main() {
 	router.Handle("/playground", playground.Handler("GraphQL playground", "/query"))
 	router.Handle("/query", srv)
 
-	err := http.ListenAndServe(":8080", router)
+	err = http.ListenAndServe(":8080", router)
 	if err != nil {
 		// TODO: handle error better
 		panic(err)
