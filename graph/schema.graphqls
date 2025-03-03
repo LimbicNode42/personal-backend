@@ -1,17 +1,16 @@
-# GraphQL schema example
 #
-# https://gqlgen.com/getting-started/
+# Structs
+#
+scalar Upload
 
 type Post {
   id: ID!
   published: Boolean!
   title: String!
   text: String!
-  attachments: Attachments
   tags: [Tags]
+  attachments: [String]
 }
-
-scalar Attachments
 
 enum Tags {
   Coding
@@ -33,7 +32,6 @@ type Query {
 #
 type Mutation {
   createPost(input: NewPost!): Post!
-  attach(files: [Attachments!]): Attachments!
   editPost(input: EditPost!): Post!
   deletePost(input: DeletePost!): Post!
 }
@@ -42,7 +40,7 @@ input NewPost {
   published: Boolean! = false
   title: String!
   text: String!
-  attachments: Attachments
+  attachments: [Upload]
   tags: [Tags]
 }
 
@@ -51,7 +49,7 @@ input EditPost {
   published: Boolean!
   title: String!
   text: String!
-  attachments: Attachments
+  attachments: [Upload]
   tags: [Tags]
 }
 
@@ -60,7 +58,7 @@ input DeletePost {
   published: Boolean
   title: String
   text: String
-  attachments: Attachments
+  attachments: [Upload]
   tags: [Tags]
 }
 

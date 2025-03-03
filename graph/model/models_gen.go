@@ -6,44 +6,46 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+
+	"github.com/99designs/gqlgen/graphql"
 )
 
 type DeletePost struct {
-	ID          string  `json:"id"`
-	Published   *bool   `json:"published,omitempty"`
-	Title       *string `json:"title,omitempty"`
-	Text        *string `json:"text,omitempty"`
-	Attachments *string `json:"attachments,omitempty"`
-	Tags        []*Tags `json:"tags,omitempty"`
+	ID          string            `json:"id"`
+	Published   *bool             `json:"published,omitempty"`
+	Title       *string           `json:"title,omitempty"`
+	Text        *string           `json:"text,omitempty"`
+	Attachments []*graphql.Upload `json:"attachments,omitempty"`
+	Tags        []*Tags           `json:"tags,omitempty"`
 }
 
 type EditPost struct {
-	ID          string  `json:"id"`
-	Published   bool    `json:"published"`
-	Title       string  `json:"title"`
-	Text        string  `json:"text"`
-	Attachments *string `json:"attachments,omitempty"`
-	Tags        []*Tags `json:"tags,omitempty"`
+	ID          string            `json:"id"`
+	Published   bool              `json:"published"`
+	Title       string            `json:"title"`
+	Text        string            `json:"text"`
+	Attachments []*graphql.Upload `json:"attachments,omitempty"`
+	Tags        []*Tags           `json:"tags,omitempty"`
 }
 
 type Mutation struct {
 }
 
 type NewPost struct {
-	Published   bool    `json:"published"`
-	Title       string  `json:"title"`
-	Text        string  `json:"text"`
-	Attachments *string `json:"attachments,omitempty"`
-	Tags        []*Tags `json:"tags,omitempty"`
+	Published   bool              `json:"published"`
+	Title       string            `json:"title"`
+	Text        string            `json:"text"`
+	Attachments []*graphql.Upload `json:"attachments,omitempty"`
+	Tags        []*Tags           `json:"tags,omitempty"`
 }
 
 type Post struct {
-	ID          string  `json:"id"`
-	Published   bool    `json:"published"`
-	Title       string  `json:"title"`
-	Text        string  `json:"text"`
-	Attachments *string `json:"attachments,omitempty"`
-	Tags        []*Tags `json:"tags,omitempty"`
+	ID          string    `json:"id"`
+	Published   bool      `json:"published"`
+	Title       string    `json:"title"`
+	Text        string    `json:"text"`
+	Tags        []*Tags   `json:"tags,omitempty"`
+	Attachments []*string `json:"attachments,omitempty"`
 }
 
 type Query struct {

@@ -18,6 +18,8 @@ import (
 
 // CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) (*model.Post, error) {
+	log.Println("Reached")
+
 	counters := r.Resolver.MongoClient.Client.Database("db").Collection("counters")
 
 	newIndex, err := db.GetNextCollectionIndex(counters, "blogPostID")
@@ -25,13 +27,15 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) 
 		log.Fatalf("Error getting next sequence: %v", err)
 	}
 
+	var temp []*string
+
 	post := &model.Post{
-		ID:        fmt.Sprintf("%d", newIndex),
-		Published: false,
-		Title:     input.Title,
-		Text:      input.Text,
-		Tags:		input.Tags,
-		Attachments: input.Attachments,
+		ID:          fmt.Sprintf("%d", newIndex),
+		Published:   false,
+		Title:       input.Title,
+		Text:        input.Text,
+		Tags:        input.Tags,
+		Attachments: temp,
 	}
 
 	bsonPost, err := bson.Marshal(post)
@@ -52,11 +56,6 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) 
 	return post, nil
 }
 
-// Attach is the resolver for the attach field.
-func (r *mutationResolver) Attach(ctx context.Context, files []string) (string, error) {
-	panic(fmt.Errorf("not implemented: Attach - attach"))
-}
-
 // EditPost is the resolver for the editPost field.
 func (r *mutationResolver) EditPost(ctx context.Context, input model.EditPost) (*model.Post, error) {
 	log.Println("Updating blog post")
@@ -64,6 +63,8 @@ func (r *mutationResolver) EditPost(ctx context.Context, input model.EditPost) (
 
 	filter := bson.M{"id": input.ID}
 	update := bson.M{"$set": bson.M{}}
+
+	var temp []*string
 
 	// Conditionally add fields to update only if they are provided
 	if input.Title != "" {
@@ -78,8 +79,8 @@ func (r *mutationResolver) EditPost(ctx context.Context, input model.EditPost) (
 	if len(input.Tags) > 0 {
 		update["$set"].(bson.M)["tags"] = input.Tags
 	}
-	if input.Attachments != nil && *input.Attachments != "" {
-		update["$set"].(bson.M)["attachments"] = input.Attachments
+	if len(input.Attachments) > 0 {
+		update["$set"].(bson.M)["attachments"] = temp
 	}
 
 	// Execute update operation
