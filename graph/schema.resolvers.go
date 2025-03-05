@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"log"
 	"time"
+	"strings"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -18,8 +19,6 @@ import (
 
 // CreatePost is the resolver for the createPost field.
 func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) (*model.Post, error) {
-	log.Println("Reached")
-
 	counters := r.Resolver.MongoClient.Client.Database("db").Collection("counters")
 
 	newIndex, err := db.GetNextCollectionIndex(counters, "blogPostID")
@@ -27,7 +26,15 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) 
 		log.Fatalf("Error getting next sequence: %v", err)
 	}
 
-	var temp []*string
+	lower := strings.ToLower(input.Title)
+	dirName := strings.ReplaceAll(lower, " ", "_")
+	indexedDirName := strings.Join([]string{dirName, fmt.Sprintf("%d", newIndex)}, "_")
+	dirPrefix := "blog/"
+
+	fileLocations, err := r.Resolver.SMBClient.SMBFileUpload(input.Attachments, indexedDirName, dirPrefix)
+	if (err != nil) {
+		log.Fatalf("Error uploading files to CDN: %v", err)
+	}
 
 	post := &model.Post{
 		ID:          fmt.Sprintf("%d", newIndex),
@@ -35,7 +42,7 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) 
 		Title:       input.Title,
 		Text:        input.Text,
 		Tags:        input.Tags,
-		Attachments: temp,
+		Attachments: fileLocations,
 	}
 
 	bsonPost, err := bson.Marshal(post)

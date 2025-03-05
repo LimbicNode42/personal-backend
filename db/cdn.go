@@ -94,11 +94,11 @@ func SMBConnect(config *SMBConfig) (*SMBClient, error) {
 }
 
 // UploadFiles uploads multiple files to the SMB share
-func (c *SMBClient) SMBFileUpload(files []*graphql.Upload, remoteDir string) ([]string, error) {
-	var uploadedFilePaths []string
+func (c *SMBClient) SMBFileUpload(files []*graphql.Upload, remoteDir string, dirPrefix string) ([]*string, error) {
+	var uploadedFilePaths []*string
 
 	// Ensure remote directory exists
-	err := c.smbCreateRemoteDir(remoteDir)
+	err := c.smbCreateRemoteDir(dirPrefix+remoteDir)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create remote directory: %w", err)
 	}
@@ -117,7 +117,7 @@ func (c *SMBClient) SMBFileUpload(files []*graphql.Upload, remoteDir string) ([]
 
 		// Define the remote file path
 		remoteFileName := filepath.Base(file.Filename)
-		remoteFilePath := filepath.Join(remoteDir, remoteFileName)
+		remoteFilePath := filepath.Join(dirPrefix, remoteDir, remoteFileName)
 
 		// Create file on SMB share
 		remoteFile, err := c.fs.Create(remoteFilePath)
@@ -133,7 +133,7 @@ func (c *SMBClient) SMBFileUpload(files []*graphql.Upload, remoteDir string) ([]
 		}
 
 		// Store uploaded file path
-		uploadedFilePaths = append(uploadedFilePaths, remoteFilePath)
+		uploadedFilePaths = append(uploadedFilePaths, &remoteFilePath)
 	}
 
 	log.Println("Files uploaded successfully")
