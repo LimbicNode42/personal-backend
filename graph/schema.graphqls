@@ -56,7 +56,7 @@ input EditPost {
 input DeletePost {
   id: ID!
   published: Boolean
-  title: String
+  title: String!
   text: String
   attachments: [Upload]
   tags: [Tags]

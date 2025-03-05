@@ -132,6 +132,8 @@ func (c *SMBClient) SMBFileUpload(files []*graphql.Upload, remoteDir string, dir
 			return nil, fmt.Errorf("failed to write file to SMB share: %w", err)
 		}
 
+		log.Println(remoteFilePath)
+
 		// Store uploaded file path
 		uploadedFilePaths = append(uploadedFilePaths, &remoteFilePath)
 	}
@@ -148,6 +150,15 @@ func (c *SMBClient) smbCreateRemoteDir(dirPath string) error {
 		return c.fs.MkdirAll(dirPath, 0755)
 	}
 	return err
+}
+
+// SMBRemoveDirRecursive removes a directory and all its contents
+func (c *SMBClient) SMBRemoveDirRecursive(dirPath string) error {
+	err := c.fs.RemoveAll(dirPath)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 // Close closes the SMB connection

@@ -13,7 +13,7 @@ import (
 type DeletePost struct {
 	ID          string            `json:"id"`
 	Published   *bool             `json:"published,omitempty"`
-	Title       *string           `json:"title,omitempty"`
+	Title       string            `json:"title"`
 	Text        *string           `json:"text,omitempty"`
 	Attachments []*graphql.Upload `json:"attachments,omitempty"`
 	Tags        []*Tags           `json:"tags,omitempty"`

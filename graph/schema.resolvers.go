@@ -10,8 +10,8 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"time"
 	"strings"
+	"time"
 
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo/options"
@@ -32,7 +32,7 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) 
 	dirPrefix := "blog/"
 
 	fileLocations, err := r.Resolver.SMBClient.SMBFileUpload(input.Attachments, indexedDirName, dirPrefix)
-	if (err != nil) {
+	if err != nil {
 		log.Fatalf("Error uploading files to CDN: %v", err)
 	}
 
@@ -106,12 +106,20 @@ func (r *mutationResolver) DeletePost(ctx context.Context, input model.DeletePos
 	log.Println("Deleting blog post")
 	collection := r.Resolver.MongoClient.Client.Database("db").Collection("blog")
 
-	filter := bson.M{"id": input.ID}
-
-	var deletedPost *model.Post
-	err := collection.FindOneAndDelete(ctx, filter).Decode(&deletedPost)
+	lower := strings.ToLower(input.Title)
+	dirName := strings.ReplaceAll(lower, " ", "_")
+	indexedDirName := strings.Join([]string{dirName, input.ID}, "_")
+	dirPrefix := "blog/"
+	err := r.Resolver.SMBClient.SMBRemoveDirRecursive(dirPrefix+indexedDirName)
 	if err != nil {
-		return nil, err
+		log.Fatalf("Failed deleting post resource from CDN: %v", err)
+	}
+
+	filter := bson.M{"id": input.ID}
+	var deletedPost *model.Post
+	err = collection.FindOneAndDelete(ctx, filter).Decode(&deletedPost)
+	if err != nil {
+		log.Fatalf("Failed deleting post: %v", err)
 	}
 
 	return deletedPost, nil

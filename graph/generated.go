@@ -3134,7 +3134,7 @@ func (ec *executionContext) unmarshalInputDeletePost(ctx context.Context, obj an
 			it.Published = data
 		case "title":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("title"))
-			data, err := ec.unmarshalOString2ᚖstring(ctx, v)
+			data, err := ec.unmarshalNString2string(ctx, v)
 			if err != nil {
 				return it, err
 			}

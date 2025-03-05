@@ -9,6 +9,7 @@ require (
 	github.com/go-chi/chi/v5 v5.2.0
 	github.com/go-resty/resty/v2 v2.16.5
 	github.com/golang-jwt/jwt/v5 v5.2.1
+	github.com/hirochachacha/go-smb2 v1.1.0
 	github.com/infisical/go-sdk v0.4.7
 	github.com/rs/cors v1.11.1
 	github.com/vektah/gqlparser/v2 v2.5.22
@@ -49,7 +50,6 @@ require (
 	github.com/googleapis/gax-go/v2 v2.12.5 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
-	github.com/hirochachacha/go-smb2 v1.1.0 // indirect
 	github.com/klauspost/compress v1.16.7 // indirect
 	github.com/montanaflynn/stats v0.7.1 // indirect
 	github.com/russross/blackfriday/v2 v2.1.0 // indirect
