@@ -20,12 +20,14 @@ type DeletePost struct {
 }
 
 type EditPost struct {
-	ID          string            `json:"id"`
-	Published   bool              `json:"published"`
-	Title       string            `json:"title"`
-	Text        string            `json:"text"`
-	Attachments []*graphql.Upload `json:"attachments,omitempty"`
-	Tags        []*Tags           `json:"tags,omitempty"`
+	ID                   string            `json:"id"`
+	Published            bool              `json:"published"`
+	Title                string            `json:"title"`
+	Text                 string            `json:"text"`
+	UnchangedAttachments []*string         `json:"unchangedAttachments,omitempty"`
+	NewAttachments       []*graphql.Upload `json:"newAttachments,omitempty"`
+	DeletedAttachments   []*string         `json:"deletedAttachments,omitempty"`
+	Tags                 []*Tags           `json:"tags,omitempty"`
 }
 
 type Mutation struct {

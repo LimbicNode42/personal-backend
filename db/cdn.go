@@ -11,6 +11,8 @@ import (
 	"github.com/hirochachacha/go-smb2"
 	infisical "github.com/infisical/go-sdk"
 	"github.com/99designs/gqlgen/graphql"
+
+	"backoffice/helpers"
 )
 
 // SMBConfig holds the configuration for connecting to the SMB server
@@ -93,6 +95,15 @@ func SMBConnect(config *SMBConfig) (*SMBClient, error) {
 	return client, nil
 }
 
+// createRemoteDir ensures the directory exists in the SMB share
+func (c *SMBClient) smbCreateRemoteDir(dirPath string) error {
+	_, err := c.fs.Stat(dirPath)
+	if os.IsNotExist(err) {
+		return c.fs.MkdirAll(dirPath, 0755)
+	}
+	return err
+}
+
 // UploadFiles uploads multiple files to the SMB share
 func (c *SMBClient) SMBFileUpload(files []*graphql.Upload, remoteDir string, dirPrefix string) ([]*string, error) {
 	var uploadedFilePaths []*string
@@ -108,16 +119,30 @@ func (c *SMBClient) SMBFileUpload(files []*graphql.Upload, remoteDir string, dir
 			continue
 		}
 
+		// Define the remote file path
+		remoteFileName := filepath.Base(file.Filename)
+		remoteFilePath := filepath.Join(dirPrefix, remoteDir, remoteFileName)
+
+		log.Println("Image being prepared for uplaod: " + remoteFilePath)
+
+		// Check if the file already exists
+		_, err := c.fs.Stat(remoteFilePath)
+		if err == nil {
+			// File already exists, skip uploading but add to results
+			uploadedFilePaths = append(uploadedFilePaths, &remoteFilePath)
+			log.Printf("File already exists, skipping upload: %s", remoteFilePath)
+			continue
+		} else if !os.IsNotExist(err) {
+			// Other error while checking file existence
+			return nil, fmt.Errorf("error checking file existence: %w", err)
+		}
+
 		// Open the uploaded file
 		uploadFile := file.File
 		// Check if uploadFile has a Close() method before deferring
 		if closer, ok := uploadFile.(io.Closer); ok {
 			defer closer.Close()
 		}
-
-		// Define the remote file path
-		remoteFileName := filepath.Base(file.Filename)
-		remoteFilePath := filepath.Join(dirPrefix, remoteDir, remoteFileName)
 
 		// Create file on SMB share
 		remoteFile, err := c.fs.Create(remoteFilePath)
@@ -143,17 +168,101 @@ func (c *SMBClient) SMBFileUpload(files []*graphql.Upload, remoteDir string, dir
 	return uploadedFilePaths, nil
 }
 
-// createRemoteDir ensures the directory exists in the SMB share
-func (c *SMBClient) smbCreateRemoteDir(dirPath string) error {
-	_, err := c.fs.Stat(dirPath)
+// UpdateFiles uploads multiple files to the SMB share
+func (c *SMBClient) SMBFileUpdate(currentFiles []*string, newFiles []*graphql.Upload, deletedFiles []*string, dir string) ([]*string, error) {
+	// Ensure remote directory exists
+	_, err := c.fs.Stat(dir)
 	if os.IsNotExist(err) {
-		return c.fs.MkdirAll(dirPath, 0755)
+		return nil, fmt.Errorf("directory does not exist: %w", err)
 	}
-	return err
+
+	// Handle Current Files
+	var uploadedFilePaths = currentFiles
+
+	// Handle Deleted Files
+	for _, pathPtr := range deletedFiles {
+		if pathPtr == nil {
+			continue
+		}
+
+		path := *pathPtr
+
+		// Check if the file exists
+		_, err := c.fs.Stat(path)
+		if err == nil {
+			log.Println(path + "does not exist, continuing")
+			continue
+		} else if !os.IsNotExist(err) {
+			// Other error while checking file existence
+			return nil, fmt.Errorf("error checking file existence: %w", err)
+		}
+
+		err = c.fs.Remove(path)
+		if err != nil {
+			return nil, fmt.Errorf("error removing file: %w", err)
+		}
+
+		uploadedFilePaths = helpers.RemoveByValue(uploadedFilePaths, &path)
+	}
+
+	// Handle New Files
+	for _, file := range newFiles {
+		if file == nil {
+			continue
+		}
+
+		// Define the remote file path
+		remoteFileName := filepath.Base(file.Filename)
+		remoteFilePath := filepath.Join(dir, remoteFileName)
+
+		log.Println("Image being prepared for uplaod: " + remoteFilePath)
+
+		// Check if the file already exists
+		_, err := c.fs.Stat(remoteFilePath)
+		if err == nil {
+			// File already exists, skip uploading but add to results
+			uploadedFilePaths = append(uploadedFilePaths, &remoteFilePath)
+			log.Printf("File already exists, skipping upload: %s", remoteFilePath)
+			continue
+		} else if !os.IsNotExist(err) {
+			// Other error while checking file existence
+			return nil, fmt.Errorf("error checking file existence: %w", err)
+		}
+
+		// Open the uploaded file
+		uploadFile := file.File
+		// Check if uploadFile has a Close() method before deferring
+		if closer, ok := uploadFile.(io.Closer); ok {
+			defer closer.Close()
+		}
+
+		// Create file on SMB share
+		remoteFile, err := c.fs.Create(remoteFilePath)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create file on SMB share: %w", err)
+		}
+		defer remoteFile.Close()
+
+		// Copy file data
+		_, err = io.Copy(remoteFile, uploadFile)
+		if err != nil {
+			return nil, fmt.Errorf("failed to write file to SMB share: %w", err)
+		}
+
+		log.Println(remoteFilePath)
+
+		// Store uploaded file path
+		uploadedFilePaths = append(uploadedFilePaths, &remoteFilePath)
+	}
+
+	log.Println("Files updated successfully")
+
+	return uploadedFilePaths, nil
 }
 
 // SMBRemoveDirRecursive removes a directory and all its contents
 func (c *SMBClient) SMBRemoveDirRecursive(dirPath string) error {
+	log.Println("Deleting " + dirPath)
 	err := c.fs.RemoveAll(dirPath)
 	if err != nil {
 		return err

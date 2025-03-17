@@ -30,7 +30,6 @@ func (r *mutationResolver) CreatePost(ctx context.Context, input model.NewPost) 
 	dirName := strings.ReplaceAll(lower, " ", "_")
 	indexedDirName := strings.Join([]string{dirName, fmt.Sprintf("%d", newIndex)}, "_")
 	dirPrefix := "blog/"
-
 	fileLocations, err := r.Resolver.SMBClient.SMBFileUpload(input.Attachments, indexedDirName, dirPrefix)
 	if err != nil {
 		log.Fatalf("Error uploading files to CDN: %v", err)
@@ -68,10 +67,18 @@ func (r *mutationResolver) EditPost(ctx context.Context, input model.EditPost) (
 	log.Println("Updating blog post")
 	collection := r.Resolver.MongoClient.Client.Database("db").Collection("blog")
 
+	lower := strings.ToLower(input.Title)
+	dirName := strings.ReplaceAll(lower, " ", "_")
+	indexedDirName := strings.Join([]string{dirName, input.ID}, "_")
+	directory := "blog/" + indexedDirName
+
+	fileLocations, err := r.Resolver.SMBClient.SMBFileUpdate(input.UnchangedAttachments, input.NewAttachments, input.DeletedAttachments, directory)
+	if err != nil {
+		log.Fatalf("Error updating files on CDN: %v", err)
+	}
+
 	filter := bson.M{"id": input.ID}
 	update := bson.M{"$set": bson.M{}}
-
-	var temp []*string
 
 	// Conditionally add fields to update only if they are provided
 	if input.Title != "" {
@@ -86,14 +93,14 @@ func (r *mutationResolver) EditPost(ctx context.Context, input model.EditPost) (
 	if len(input.Tags) > 0 {
 		update["$set"].(bson.M)["tags"] = input.Tags
 	}
-	if len(input.Attachments) > 0 {
-		update["$set"].(bson.M)["attachments"] = temp
+	if len(input.UnchangedAttachments) > 0 || len(input.NewAttachments) > 0 || len(input.DeletedAttachments) > 0 {
+		update["$set"].(bson.M)["attachments"] = fileLocations
 	}
 
 	// Execute update operation
 	opts := options.FindOneAndUpdate().SetReturnDocument(options.After)
 	var updatedPost model.Post
-	err := collection.FindOneAndUpdate(ctx, filter, update, opts).Decode(&updatedPost)
+	err = collection.FindOneAndUpdate(ctx, filter, update, opts).Decode(&updatedPost)
 	if err != nil {
 		return nil, err
 	}
@@ -110,7 +117,7 @@ func (r *mutationResolver) DeletePost(ctx context.Context, input model.DeletePos
 	dirName := strings.ReplaceAll(lower, " ", "_")
 	indexedDirName := strings.Join([]string{dirName, input.ID}, "_")
 	dirPrefix := "blog/"
-	err := r.Resolver.SMBClient.SMBRemoveDirRecursive(dirPrefix+indexedDirName)
+	err := r.Resolver.SMBClient.SMBRemoveDirRecursive(dirPrefix + indexedDirName)
 	if err != nil {
 		log.Fatalf("Failed deleting post resource from CDN: %v", err)
 	}

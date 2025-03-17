@@ -49,7 +49,9 @@ input EditPost {
   published: Boolean!
   title: String!
   text: String!
-  attachments: [Upload]
+  unchangedAttachments: [String]
+  newAttachments: [Upload]
+  deletedAttachments: [String]
   tags: [Tags]
 }
 

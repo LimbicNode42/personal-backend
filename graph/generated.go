@@ -3173,7 +3173,7 @@ func (ec *executionContext) unmarshalInputEditPost(ctx context.Context, obj any)
 		asMap[k] = v
 	}
 
-	fieldsInOrder := [...]string{"id", "published", "title", "text", "attachments", "tags"}
+	fieldsInOrder := [...]string{"id", "published", "title", "text", "unchangedAttachments", "newAttachments", "deletedAttachments", "tags"}
 	for _, k := range fieldsInOrder {
 		v, ok := asMap[k]
 		if !ok {
@@ -3208,13 +3208,27 @@ func (ec *executionContext) unmarshalInputEditPost(ctx context.Context, obj any)
 				return it, err
 			}
 			it.Text = data
-		case "attachments":
-			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("attachments"))
+		case "unchangedAttachments":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("unchangedAttachments"))
+			data, err := ec.unmarshalOString2ᚕᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.UnchangedAttachments = data
+		case "newAttachments":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("newAttachments"))
 			data, err := ec.unmarshalOUpload2ᚕᚖgithubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚐUpload(ctx, v)
 			if err != nil {
 				return it, err
 			}
-			it.Attachments = data
+			it.NewAttachments = data
+		case "deletedAttachments":
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("deletedAttachments"))
+			data, err := ec.unmarshalOString2ᚕᚖstring(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.DeletedAttachments = data
 		case "tags":
 			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("tags"))
 			data, err := ec.unmarshalOTags2ᚕᚖbackofficeᚋgraphᚋmodelᚐTags(ctx, v)
