@@ -2,8 +2,10 @@ scalar JSON
 
 type Mutation {
   appendToJSONL(fileName: String!, record: JSON!): Boolean!
+  createDataset(fileName: String!): Boolean!
 }
 
 type Query {
   readJSONL(fileName: String!): [JSON!]!
+  getFiles: [String!]!
 }
