@@ -16,7 +16,8 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/rs/cors"
 
-	"backoffice/graph"
+	blog_api "backoffice/graph/blog"
+	datasets_api "backoffice/graph/datasets"
 	"backoffice/auth"
 	"backoffice/db"
 )
@@ -44,17 +45,29 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	resolver := graph.NewResolver(mongoURI, smbConfig)
-	defer resolver.Close()
+	blog_resolver := blog_api.NewResolver(mongoURI, smbConfig)
+	defer blog_resolver.Close()
+	blog := handler.New(blog_api.NewExecutableSchema(blog_api.Config{Resolvers: blog_resolver}))
+	blog.AddTransport(transport.Options{})
+	blog.AddTransport(transport.GET{})
+	blog.AddTransport(transport.POST{})
+	blog.AddTransport(transport.MultipartForm{})
+	blog.SetQueryCache(lru.New[*ast.QueryDocument](1000))
+	blog.Use(extension.Introspection{})
+	blog.Use(extension.AutomaticPersistedQuery{
+		Cache: lru.New[string](100),
+	})
 
-	srv := handler.New(graph.NewExecutableSchema(graph.Config{Resolvers: resolver}))
-	srv.AddTransport(transport.Options{})
-	srv.AddTransport(transport.GET{})
-	srv.AddTransport(transport.POST{})
-	srv.AddTransport(transport.MultipartForm{})
-	srv.SetQueryCache(lru.New[*ast.QueryDocument](1000))
-	srv.Use(extension.Introspection{})
-	srv.Use(extension.AutomaticPersistedQuery{
+	datasets_resolver := datasets_api.NewResolver()
+	defer datasets_resolver.Close()
+	datasets := handler.New(datasets_api.NewExecutableSchema(datasets_api.Config{Resolvers: datasets_resolver}))
+	datasets.AddTransport(transport.Options{})
+	datasets.AddTransport(transport.GET{})
+	datasets.AddTransport(transport.POST{})
+	datasets.AddTransport(transport.MultipartForm{})
+	datasets.SetQueryCache(lru.New[*ast.QueryDocument](1000))
+	datasets.Use(extension.Introspection{})
+	datasets.Use(extension.AutomaticPersistedQuery{
 		Cache: lru.New[string](100),
 	})
 
@@ -85,7 +98,8 @@ func main() {
 	})
 
 	router.Handle("/playground", playground.Handler("GraphQL playground", "/query"))
-	router.Handle("/query", srv)
+	router.Handle("/blog", blog)
+	router.Handle("/datasets", datasets)
 
 	err = http.ListenAndServe(":8080", router)
 	if err != nil {

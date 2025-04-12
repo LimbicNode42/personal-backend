@@ -10,11 +10,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strings"
+	"log"
 )
 
 // AppendToJSONL is the resolver for the appendToJSONL field.
 func (r *mutationResolver) AppendToJSONL(ctx context.Context, fileName string, record map[string]any) (bool, error) {
-	file := strings.Join([]string{"datasets", fmt.Sprintf("%d", fileName)}, "/")
+	file := strings.Join([]string{"datasets", fmt.Sprintf("%s", fileName)}, "/")
 
 	// Open the file for appending (create if not exists)
 	f, err := os.OpenFile(file, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
@@ -39,7 +41,7 @@ func (r *mutationResolver) AppendToJSONL(ctx context.Context, fileName string, r
 
 // CreateDataset is the resolver for the createDataset field.
 func (r *mutationResolver) CreateDataset(ctx context.Context, fileName string) (bool, error) {
-	file := strings.Join([]string{"datasets", fmt.Sprintf("%d", fileName)}, "/")
+	file := strings.Join([]string{"datasets", fmt.Sprintf("%s", fileName)}, "/")
 
 	// Ensure the filename ends with `.jsonl` (optional, but helpful)
 	if !strings.HasSuffix(file, ".jsonl") {
@@ -62,7 +64,7 @@ func (r *mutationResolver) CreateDataset(ctx context.Context, fileName string) (
 
 // ReadJSONL is the resolver for the readJSONL field.
 func (r *queryResolver) ReadJSONL(ctx context.Context, fileName string) ([]map[string]any, error) {
-	file := strings.Join([]string{"datasets", fmt.Sprintf("%d", fileName)}, "/")
+	file := strings.Join([]string{"datasets", fmt.Sprintf("%s", fileName)}, "/")
 
 	f, err := os.Open(file)
 	if err != nil {
@@ -87,7 +89,7 @@ func (r *queryResolver) ReadJSONL(ctx context.Context, fileName string) ([]map[s
 // GetFiles is the resolver for the getFiles field.
 func (r *queryResolver) GetFiles(ctx context.Context) ([]string, error) {
 	// Define the directory path you want to scan
-	dirPath := "datasets" // Change this to your actual dataset directory
+	dirPath := "./datasets" // Change this to your actual dataset directory
 
 	// Read the directory contents
 	entries, err := os.ReadDir(dirPath)
@@ -99,6 +101,9 @@ func (r *queryResolver) GetFiles(ctx context.Context) ([]string, error) {
 	for _, entry := range entries {
 		if !entry.IsDir() { // Only include files (not sub-directories)
 			fileNames = append(fileNames, entry.Name())
+			log.Println(entry.Name())
+		} else {
+			log.Println("no files found")
 		}
 	}
 
