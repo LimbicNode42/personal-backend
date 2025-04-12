@@ -1,0 +1,9 @@
+scalar JSON
+
+type Mutation {
+  appendToJSONL(fileName: String!, record: JSON!): Boolean!
+}
+
+type Query {
+  readJSONL(fileName: String!): [JSON!]!
+}

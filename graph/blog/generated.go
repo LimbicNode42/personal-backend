@@ -3,7 +3,7 @@
 package graph
 
 import (
-	"backoffice/graph/model"
+	"backoffice/graph/blog/model"
 	"bytes"
 	"context"
 	"embed"

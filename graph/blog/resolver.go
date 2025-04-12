@@ -3,7 +3,7 @@ package graph
 import (
 	"log"
 
-	"backoffice/graph/model"
+	"backoffice/graph/blog/model"
 	"backoffice/db"
 )
 

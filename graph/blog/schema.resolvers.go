@@ -6,7 +6,7 @@ package graph
 
 import (
 	"backoffice/db"
-	"backoffice/graph/model"
+	"backoffice/graph/blog/model"
 	"context"
 	"fmt"
 	"log"
